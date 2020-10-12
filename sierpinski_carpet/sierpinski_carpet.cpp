@@ -1,162 +1,135 @@
-/*************************************************************************************/
-
-// Trochê bardziej skomplikowany program wykorzystuj¹cy funkcje biblioteki OpenGL
-
-/*************************************************************************************/
-
 #include <windows.h>
-
 #include <gl/gl.h>
-
 #include <gl/glut.h>
+#include <ctime>
+#include <cmath>
+#include <cstdio>
 
-/*************************************************************************************/
+const GLint WINDOW_SIZE = 800;
+GLint CARPET_LEVEL = 3;
 
 
-// Funkcaja okreœlaj¹ca, co ma byæ rysowane
-// (zawsze wywo³ywana, gdy trzeba przerysowaæ scenê)
+GLfloat pick_random_peturbation(GLfloat square_half_size)
+{
+    // peturbation is 20% to 40% of square half size, positive or negative.
+    GLint sign = rand() % 100 < 50 ? 1 : -1;
+    return sign * (GLfloat)(10 + rand() % 21) / 100.0f * square_half_size;
+}
 
 
+GLfloat pick_random_color()
+{
+    return (GLfloat) (rand() % 101 / 100.0f);
+}
+
+
+void draw_carpet(GLfloat x, GLfloat y, GLfloat half_size, GLint level)
+{
+    if (level < 0) 
+    {
+        return;
+    }
+
+    if (level > 0)
+    {
+        // call reqursion
+        draw_carpet(x - 2 * half_size / 3, y + 2 * half_size / 3, half_size / 3, level - 1);
+        draw_carpet(x, y + 2 * half_size / 3, half_size / 3, level - 1);
+        draw_carpet(x + 2 * half_size / 3, y + 2 * half_size / 3, half_size / 3, level - 1);
+
+        draw_carpet(x - 2 * half_size / 3, y, half_size / 3, level - 1);
+        draw_carpet(x + 2 * half_size / 3, y, half_size / 3, level - 1);
+
+        draw_carpet(x - 2 * half_size / 3, y - 2 * half_size / 3, half_size / 3, level - 1);
+        draw_carpet(x, y - 2 * half_size / 3, half_size / 3, level - 1);
+        draw_carpet(x + 2 * half_size / 3, y - 2 * half_size / 3, half_size / 3, level - 1);
+    }
+    else if (level == 0)
+    {
+		// finally draw squares at lowest level
+		glBegin(GL_POLYGON);
+		glColor3f(pick_random_color(), pick_random_color(), pick_random_color());
+		glVertex2f(x - half_size + pick_random_peturbation(half_size), y + half_size + pick_random_peturbation(half_size));
+		glColor3f(pick_random_color(), pick_random_color(), pick_random_color());
+		glVertex2f(x + half_size + pick_random_peturbation(half_size), y + half_size + pick_random_peturbation(half_size));
+		glColor3f(pick_random_color(), pick_random_color(), pick_random_color());
+		glVertex2f(x + half_size + pick_random_peturbation(half_size), y - half_size + pick_random_peturbation(half_size));
+		glColor3f(pick_random_color(), pick_random_color(), pick_random_color());
+		glVertex2f(x - half_size + pick_random_peturbation(half_size), y - half_size + pick_random_peturbation(half_size));
+		glEnd();
+    }
+
+}
 
 
 void RenderScene(void)
-
 {
-
     glClear(GL_COLOR_BUFFER_BIT);
-    // Czyszczenie okna aktualnym kolorem czyszcz¹cym
-
-
-
-    glColor3f(0.0f, 1.0f, 0.0f);
-    // Ustawienie aktualnego koloru rysowania na zielony
-
-
-
-    glRectf(-50.0f, 50.0f, 50.0f, -50.0f);
-    // Narysowanie prostok¹ta
-
-
+    
+    // call function to draw carpet at given level
+    draw_carpet(0.0f, 0.0f, 90.0f, CARPET_LEVEL);
 
     glFlush();
-    // Przekazanie poleceñ rysuj¹cych do wykonania
 
 }
-
-/*************************************************************************************/
-
-// Funkcja ustalaj¹ca stan renderowania
-
 
 
 void MyInit(void)
-
 {
-
-    glClearColor(0.5f, 0.5f, 0.5f, 1.0f);
-    // Kolor okna wnêtrza okna - ustawiono na szary
+    glClearColor(0.0f, 0.0f, 0.0f, 1);
 
 }
-
-/*************************************************************************************/
-
-// Funkcja s³u¿¹ca do kontroli zachowania proporcji rysowanych obiektów
-// niezale¿nie od rozmiarów okna graficznego
-
 
 
 void ChangeSize(GLsizei horizontal, GLsizei vertical)
-
-// Parametry horizontal i vertical (szerokoœæ i wysokoœæ okna) s¹
-// przekazywane do funkcji za ka¿dym razem, gdy zmieni siê rozmiar okna
-
 {
-
-    GLfloat AspectRatio;
-
-    // Deklaracja zmiennej AspectRatio okreœlaj¹cej proporcjê wymiarów okna
-
-
-
     if (vertical == 0)
-        // Zabezpieczenie pzred dzieleniem przez 0
-
+    {
         vertical = 1;
-
-
+    }
+       
     glViewport(0, 0, horizontal, vertical);
-    // Ustawienie wielkoœciokna okna urz¹dzenia (Viewport)
-    // W tym przypadku od (0,0) do (horizontal, vertical)
-
-
     glMatrixMode(GL_PROJECTION);
-    // Okreœlenie uk³adu wspó³rzêdnych obserwatora
-
     glLoadIdentity();
-    // Okreœlenie przestrzeni ograniczaj¹cej
 
-    AspectRatio = (GLfloat)horizontal / (GLfloat)vertical;
-    // Wyznaczenie wspó³czynnika proporcji okna
-
-    // Gdy okno na ekranie nie jest kwadratem wymagane jest
-    // okreœlenie okna obserwatora.
-    // Pozwala to zachowaæ w³aœciwe proporcje rysowanego obiektu
-    // Do okreœlenia okna obserwatora s³u¿y funkcja glOrtho(...)
-
-
-
+    GLfloat AspectRatio = (GLfloat)horizontal / (GLfloat)vertical;
+    GLdouble obs_win = 100.0;
     if (horizontal <= vertical)
-
-        glOrtho(-100.0, 100.0, -100.0 / AspectRatio, 100.0 / AspectRatio, 1.0, -1.0);
-
+    {
+        glOrtho(-obs_win, obs_win, -obs_win / AspectRatio, obs_win / AspectRatio, 1.0, -1.0);
+    }
     else
-
-        glOrtho(-100.0 * AspectRatio, 100.0 * AspectRatio, -100.0, 100.0, 1.0, -1.0);
+    {
+        glOrtho(-obs_win * AspectRatio, obs_win * AspectRatio, -obs_win, obs_win, 1.0, -1.0);
+    }
 
     glMatrixMode(GL_MODELVIEW);
-    // Okreœlenie uk³adu wspó³rzêdnych    
-
     glLoadIdentity();
 
 }
 
-/*************************************************************************************/
 
-// G³ówny punkt wejœcia programu. Program dzia³a w trybie konsoli
-
-
-
-int main(void)
-
+int main(int argc, char* argv[])
 {
+    if (argc > 1) 
+    {
+        CARPET_LEVEL = atoi(argv[1]);
+    }
+
+    srand(time(NULL));
 
     glutInitDisplayMode(GLUT_SINGLE | GLUT_RGBA);
-    // Ustawienie trybu wyœwietlania
-    // GLUT_SINGLE - pojedynczy bufor wyœwietlania
-    // GLUT_RGBA - model kolorów RGB
+    glutInitWindowSize(WINDOW_SIZE, WINDOW_SIZE);
+    glutInitWindowPosition((glutGet(GLUT_SCREEN_WIDTH) - WINDOW_SIZE) / 2,
+                           (glutGet(GLUT_SCREEN_HEIGHT) - WINDOW_SIZE) / 2);
 
-
-
-    glutCreateWindow("Drugi program w OpenGL");
-    // Utworzenie okna i okreœlenie treœci napisu w nag³ówku okna
-
+    glutCreateWindow("Sierpinski Carpet");
 
     glutDisplayFunc(RenderScene);
-    // Okreœlenie, ¿e funkcja RenderScene bêdzie funkcj¹ zwrotn¹ (callback)
-    // Biblioteka GLUT bêdzie wywo³ywa³a t¹ funkcjê za ka¿dym razem, gdy
-    // trzeba bêdzie przerysowaæ okno
-
-
     glutReshapeFunc(ChangeSize);
-    // Dla aktualnego okna ustala funkcjê zwrotn¹ odpowiedzialn¹ za
-    // zmiany rozmiaru okna
 
     MyInit();
-    // Funkcja MyInit (zdefiniowana powy¿ej) wykonuje wszelkie 
-    // inicjalizacje konieczneprzed przyst¹pieniem do renderowania
-
 
     glutMainLoop();
-    // Funkcja uruchamia szkielet biblioteki GLUT
 
 }
