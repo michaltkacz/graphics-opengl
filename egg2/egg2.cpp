@@ -32,7 +32,7 @@ typedef float angle[3];
  *	- "D" - change direction of spin and rotation.
  *	- "A" - enable/disable axes.
  *	- "LMB + MOUSE_MOVE_X" - move observer left/right.
- *	- "RMB + MOUSE_MOVE_Y" - move observer up/down.
+ *	- "RMB + MOUSE_MOVE_X/MOUSE_MOVE_Y" - rotate observer spherically.
  *	- "MMB + MOUSE_MOVE_Y" - zoom in/out.
  *	- "R" - reset observer position.
  *
@@ -61,6 +61,8 @@ point3 observer_position = { 0.0, 0.0, 0.0 }; // Observer cartesian coordinates.
 float pixels_to_angle = 0;	// Pixels to angle ratio.
 point2 old_mouse_position = { 0.0, 0.0 };  // Old mouse position used to calculate mouse movement.
 point2 delta_mouse_position = { 0.0, 0.0 };	// Defines mouse move.
+
+point3 lookat_target_position = { 0.0, 0.0, 0.0 }; // Defines target for glLookAt function
 
 enum mouse_buttons_clicked // Defines mouse buttons
 {
@@ -190,6 +192,10 @@ void keys(unsigned char key, int x, int y)
 	// Reset observer position.
 	if (key == 'r')
 	{
+		lookat_target_position[0] = 0.0;
+		lookat_target_position[1] = 0.0;
+		lookat_target_position[2] = 0.0;
+		
 		observer_radius = 16.0;
 		observer_azimuth_angle = 30.0;
 		observer_inclination_angle = 30.0;
@@ -228,34 +234,53 @@ void mouse_buttons(int btn, int state, int x, int y)
 
 void mouse_motion(GLsizei x, GLsizei y)
 {
+	// Calculate mouse move.
+	delta_mouse_position[0] = x - old_mouse_position[0];	
+	old_mouse_position[0] = x;
+	delta_mouse_position[1] = y - old_mouse_position[1];	
+	old_mouse_position[1] = y;
+
 	// Handle mouse movement.
 	if (mbc == left)
 	{
-		delta_mouse_position[0] = x - old_mouse_position[0];
-		observer_azimuth_angle += delta_mouse_position[0] * pixels_to_angle;
+		// Calculate observer position X and Z.
+		float vec_x = observer_radius * cosf(observer_azimuth_angle * DEG_TO_RAD) * cosf(observer_inclination_angle * DEG_TO_RAD);
+		float vec_z = observer_radius * sinf(observer_azimuth_angle * DEG_TO_RAD) * cosf(observer_inclination_angle * DEG_TO_RAD);
 
-		old_mouse_position[0] = x;
-		
-		if (observer_azimuth_angle >= 360.0) observer_azimuth_angle = 0.0;
-		else if (observer_azimuth_angle <= 0.0) observer_azimuth_angle = 360.0f;
+		// Calculate manitude of XZ vector.
+		float magnitude = sqrt(vec_x * vec_x + vec_z * vec_z);
+
+		// Normalize XZ vector.
+		if(magnitude != 0.0)
+		{
+			vec_x /= magnitude;
+			vec_z /= magnitude;
+		}
+
+		// Move lookat_target perpendicularly to XZ vector.
+		lookat_target_position[0] -= vec_z * delta_mouse_position[0] * pixels_to_angle * 0.1;
+		lookat_target_position[2] += vec_x * delta_mouse_position[0] * pixels_to_angle * 0.1;
+
+		// Move lookat_target parallelly to XZ vector.
+		lookat_target_position[0] -= vec_x * delta_mouse_position[1] * pixels_to_angle * 0.1;
+		lookat_target_position[2] -= vec_z * delta_mouse_position[1] * pixels_to_angle * 0.1;
 	}
 	else if (mbc == right)
 	{
-		delta_mouse_position[1] = y - old_mouse_position[1];
-		observer_inclination_angle += delta_mouse_position[1] * pixels_to_angle;
+		// Change azimuth angle with mouse X move.
+		observer_azimuth_angle += delta_mouse_position[0] * pixels_to_angle;
+		if (observer_azimuth_angle >= 360.0) observer_azimuth_angle = 0.0;
+		else if (observer_azimuth_angle <= 0.0) observer_azimuth_angle = 360.0f;
 
-		old_mouse_position[1] = y;
-		
+		// Change inclination angle with mouse Y move.
+		observer_inclination_angle += delta_mouse_position[1] * pixels_to_angle;
 		if(observer_inclination_angle >= 360.0) observer_inclination_angle = 0.0;
 		else if(observer_inclination_angle < 0.0) observer_inclination_angle = 360.0;
 	}
 	else if (mbc == middle)
 	{
-		delta_mouse_position[1] = y - old_mouse_position[1];
+		// Zoom in/out with mouuse Y move.
 		observer_radius += delta_mouse_position[1] * pixels_to_angle * 0.25;
-		
-		old_mouse_position[1] = y;
-
 		if (observer_radius >= 50) observer_radius = 50.0;
 		else if (observer_radius <= 1.0) observer_radius = 1.0;
 	}
@@ -417,13 +442,13 @@ void render_scene()
 	glLoadIdentity();
 
 	// Calculate observer cartesian position.
-	observer_position[0] = observer_radius * cosf(observer_azimuth_angle * DEG_TO_RAD) * cosf(observer_inclination_angle * DEG_TO_RAD);
-	observer_position[1] = observer_radius * sinf(observer_inclination_angle * DEG_TO_RAD);
-	observer_position[2] = observer_radius * sinf(observer_azimuth_angle * DEG_TO_RAD) * cosf(observer_inclination_angle * DEG_TO_RAD);
+	observer_position[0] = observer_radius * cosf(observer_azimuth_angle * DEG_TO_RAD) * cosf(observer_inclination_angle * DEG_TO_RAD) + lookat_target_position[0];
+	observer_position[1] = observer_radius * sinf(observer_inclination_angle * DEG_TO_RAD) + lookat_target_position[1];
+	observer_position[2] = observer_radius * sinf(observer_azimuth_angle * DEG_TO_RAD) * cosf(observer_inclination_angle * DEG_TO_RAD) + lookat_target_position[2];
 	// Set observer orientation UP_Y vector.
 	float up_y = (observer_inclination_angle >= 90.0 && observer_inclination_angle < 270.0) ? -1.0 : 1.0;
 	// Set observer position, look target and orientation.
-	gluLookAt(observer_position[0], observer_position[1], observer_position[2], 0.0, 0.0, 0.0, 0.0, up_y, 0.0);
+	gluLookAt(observer_position[0], observer_position[1], observer_position[2], lookat_target_position[0], lookat_target_position[1], lookat_target_position[2], 0.0, up_y, 0.0);
 
 	// Show axes.
 	if (show_axes)
@@ -435,6 +460,18 @@ void render_scene()
 		// Pop matrix from stack.
 		glPopMatrix();
 	}
+
+	// Push matrix on stack.
+	glPushMatrix();
+	// Set color of "crosshair"
+	glColor3f(0.8, 0.2, 0.5);
+	// Set position of "crosshair" to lookat_target_position.
+	glTranslatef(lookat_target_position[0], lookat_target_position[1], lookat_target_position[2]);
+	// Draw "crosshair" as a solid sphere.
+	glutSolidSphere(0.12, 10, 10);
+	// Pop matrix from stack.
+	glPopMatrix();
+	
 
 	// -- BIG EGG --
 	// Push matrix on stack.
