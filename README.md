@@ -10,6 +10,6 @@ Zadania i odpowiadające im realizacje:
    - egg
 3. Zadanie 3 "Akcja i reakcja"
    - egg2
-   - ?
+   - weierstrass_function
 4. Zadanie 4 "?"
    - ?
