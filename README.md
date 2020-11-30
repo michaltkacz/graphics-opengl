@@ -11,5 +11,9 @@ Zadania i odpowiadające im realizacje:
 3. Zadanie 3 "Akcja i reakcja"
    - egg2
    - weierstrass_function
-4. Zadanie 4 "?"
+4. Zadanie 4 "I stało się światło"
+   - lighting
+5. Zadanie 5 "Tekstury"
+   - ?
+6. Zadanie 6 "?"
    - ?
