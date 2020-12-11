@@ -14,6 +14,6 @@ Zadania i odpowiadające im realizacje:
 4. Zadanie 4 "I stało się światło"
    - lighting
 5. Zadanie 5 "Tekstury"
-   - ?
+   - textures
 6. Zadanie 6 "?"
    - ?
