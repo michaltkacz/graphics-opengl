@@ -29,10 +29,10 @@ Repository contains 6 projects made with C++ and glut 3.7 library. "Egg" project
 | <img width="1604"  src="./images/image6.png">| <img width="1604"  src="./images/image7.png">|
 
 ## Technologies
-All programs are made using C++ and [glut 3.7](https://www.opengl.org/resources/libraries/glut/spec3/spec3.html) library.
+All programs were made using C++ and [glut 3.7](https://www.opengl.org/resources/libraries/glut/spec3/spec3.html) library.
 
 ## Setup and run
-In order to compile, you have to install glut 3.7 library first. Then just download cpp files and use any C++ compiler (developed using Visual Studio 2019).
+In order to compile programs, you have to install glut 3.7 library first. Then just download cpp files and use any C++ compiler (developed using Visual Studio 2019).
 
 ## Features
 List of features:
